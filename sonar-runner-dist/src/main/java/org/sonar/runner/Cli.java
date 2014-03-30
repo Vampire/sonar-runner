@@ -50,6 +50,9 @@ class Cli {
   Cli parse(String[] args) {
     reset();
     props.putAll(System.getProperties());
+    if (props.containsKey("sonar.log.level")) {
+      Logs.setLogLevel(Logs.Level.valueOf(props.getProperty("sonar.log.level")));
+    }
     for (int i = 0; i < args.length; i++) {
       String arg = args[i];
       if (i == 0 && !arg.startsWith("-")) {
@@ -65,10 +68,10 @@ class Cli {
         displayStackTrace = true;
 
       } else if ("-X".equals(arg) || "--debug".equals(arg)) {
-        props.setProperty("sonar.verbose", "true");
+        props.setProperty("sonar.log.level", "DEBUG");
         displayStackTrace = true;
         debugMode = true;
-        Logs.setDebugEnabled(true);
+        Logs.setLogLevel(Logs.Level.DEBUG);
 
       } else if ("-D".equals(arg) || "--define".equals(arg)) {
         i++;
@@ -81,6 +84,28 @@ class Cli {
       } else if (arg.startsWith("-D")) {
         arg = arg.substring(2);
         appendPropertyTo(arg, props);
+
+      } else if ("-l".equals(arg) || "--logLevel".equals(arg)) {
+        i++;
+        if (i >= args.length) {
+          printError("Missing argument for option --logLevel");
+        }
+        arg = args[i];
+        props.setProperty("sonar.log.level", arg);
+        if (arg.equals("DEBUG")) {
+          displayStackTrace = true;
+          debugMode = true;
+        }
+        Logs.setLogLevel(Logs.Level.valueOf(arg));
+
+      } else if (arg.startsWith("-l")) {
+        arg = arg.substring(2);
+        props.setProperty("sonar.log.level", arg);
+        if (arg.equals("DEBUG")) {
+          displayStackTrace = true;
+          debugMode = true;
+        }
+        Logs.setLogLevel(Logs.Level.valueOf(arg));
 
       } else {
         printError("Unrecognized option: " + arg);
@@ -124,6 +149,7 @@ class Cli {
     Logs.info(" -h,--help             Display help information");
     Logs.info(" -v,--version          Display version information");
     Logs.info(" -X,--debug            Produce execution debug output");
+    Logs.info(" -l,--logLevel         Set log level");
     System.exit(Exit.SUCCESS);
   }
 }
